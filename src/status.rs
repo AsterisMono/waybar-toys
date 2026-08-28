@@ -73,18 +73,55 @@ impl Counts {
         self.working + self.blocked + self.done + self.idle + self.unknown
     }
 
-    /// Substitute `{working}`, `{blocked}`, `{done}`, `{idle}`, `{unknown}`
-    /// and `{total}` tokens in `template`. Unknown `{...}` tokens are left
-    /// untouched.
+    /// Render conditional sections, then substitute count tokens.
+    ///
+    /// A section such as `{{#blocked}}blocked: {blocked}{{/blocked}}` is
+    /// included only when its count is nonzero. Unknown sections and tokens
+    /// are left untouched.
     pub fn render(&self, template: &str) -> String {
-        template
-            .replace("{working}", &self.working.to_string())
-            .replace("{blocked}", &self.blocked.to_string())
-            .replace("{done}", &self.done.to_string())
-            .replace("{idle}", &self.idle.to_string())
-            .replace("{unknown}", &self.unknown.to_string())
-            .replace("{total}", &self.total().to_string())
+        let mut rendered = template.to_string();
+        for (name, count) in self.values() {
+            rendered = render_conditional_sections(&rendered, name, count);
+        }
+
+        for (name, count) in self.values() {
+            rendered = rendered.replace(&format!("{{{name}}}"), &count.to_string());
+        }
+        rendered
     }
+
+    fn values(&self) -> [(&'static str, usize); 6] {
+        [
+            ("working", self.working),
+            ("blocked", self.blocked),
+            ("done", self.done),
+            ("idle", self.idle),
+            ("unknown", self.unknown),
+            ("total", self.total()),
+        ]
+    }
+}
+
+fn render_conditional_sections(template: &str, name: &str, count: usize) -> String {
+    let opening = format!("{{{{#{name}}}}}");
+    let closing = format!("{{{{/{name}}}}}");
+    let mut rendered = template.to_string();
+
+    while let Some(start) = rendered.find(&opening) {
+        let content_start = start + opening.len();
+        let Some(relative_end) = rendered[content_start..].find(&closing) else {
+            break;
+        };
+        let end = content_start + relative_end;
+        let replacement = if count == 0 {
+            String::new()
+        } else {
+            rendered[content_start..end].to_string()
+        };
+        rendered.replace_range(start..end + closing.len(), &replacement);
+    }
+
+    rendered
 }
 
 #[cfg(test)]
@@ -154,5 +191,40 @@ mod tests {
         };
         assert_eq!(counts.render("{total} total"), "5 total");
         assert_eq!(counts.render("{nope} {working}"), "{nope} 2");
+    }
+
+    #[test]
+    fn render_includes_nonzero_conditional_sections() {
+        let counts = Counts {
+            working: 2,
+            blocked: 1,
+            ..Default::default()
+        };
+        assert_eq!(
+            counts.render("{working}w{{#blocked}} {blocked}b{{/blocked}}"),
+            "2w 1b"
+        );
+    }
+
+    #[test]
+    fn render_omits_zero_conditional_sections() {
+        let counts = Counts {
+            working: 2,
+            ..Default::default()
+        };
+        assert_eq!(
+            counts
+                .render("{working}w{{#blocked}} {blocked}b{{/blocked}}{{#done}} {done}d{{/done}}"),
+            "2w"
+        );
+    }
+
+    #[test]
+    fn render_preserves_unknown_or_unclosed_sections() {
+        let counts = Counts::default();
+        assert_eq!(
+            counts.render("{{#future}}value{{/future}} {{#blocked}}value"),
+            "{{#future}}value{{/future}} {{#blocked}}value"
+        );
     }
 }

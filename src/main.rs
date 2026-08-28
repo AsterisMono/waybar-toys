@@ -4,7 +4,7 @@
 //! Intended to be re-invoked by waybar's `custom` module on an interval;
 //! each run prints exactly one line.
 
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 
 use clap::Parser;
@@ -25,6 +25,7 @@ struct Args {
     socket: Option<PathBuf>,
 
     /// Output template. Tokens: {working} {blocked} {done} {idle} {unknown} {total}.
+    /// Wrap content in {{#status}}...{{/status}} to show it only when nonzero.
     #[arg(short, long, default_value = "{working}w {blocked}b {done}d {idle}i")]
     format: String,
 
@@ -55,16 +56,18 @@ fn resolve_socket(args: &Args) -> Option<PathBuf> {
     if let Some(path) = &args.socket {
         return Some(path.clone());
     }
-    if let Ok(path) = std::env::var("HERDR_SOCKET_PATH") {
-        if !path.is_empty() {
-            return Some(PathBuf::from(path));
-        }
+    if let Some(path) = std::env::var("HERDR_SOCKET_PATH")
+        .ok()
+        .filter(|path| !path.is_empty())
+    {
+        return Some(PathBuf::from(path));
     }
     let config = config_dir()?;
-    if let Ok(session) = std::env::var("HERDR_SESSION") {
-        if !session.is_empty() {
-            return Some(config.join("sessions").join(session).join("herdr.sock"));
-        }
+    if let Some(session) = std::env::var("HERDR_SESSION")
+        .ok()
+        .filter(|session| !session.is_empty())
+    {
+        return Some(config.join("sessions").join(session).join("herdr.sock"));
     }
     Some(config.join("herdr.sock"))
 }

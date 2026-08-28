@@ -55,6 +55,15 @@ The herdr server socket is resolved in this order:
 Template tokens: `{working}` `{blocked}` `{done}` `{idle}` `{unknown}`
 `{total}`.
 
+Wrap part of a template in `{{#status}}...{{/status}}` to include it only
+when that status count is nonzero. This works with every template token,
+including `total`:
+
+```sh
+wayherdr -f '⚒ {working}{{#blocked}} ⛔ {blocked}{{/blocked}}{{#done}} ✓ {done}{{/done}}'
+# => ⚒ 2 ⛔ 1        (when blocked=1 and done=0)
+```
+
 Examples:
 
 ```sh
