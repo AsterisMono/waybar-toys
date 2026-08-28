@@ -18,13 +18,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Build
-        run: cargo build --release --locked
+        run: cargo build --release --locked -p waycat
 
       - name: Package
         run: |
           name="waycat-${GITHUB_REF_NAME//\//-}-x86_64-unknown-linux-gnu"
           mkdir -p "dist/$name"
-          cp target/release/waycat LICENSE res/waycat.ttf "dist/$name/"
+          cp target/release/waycat waycat/LICENSE waycat/res/waycat.ttf "dist/$name/"
           tar -C dist -czf "dist/$name.tar.gz" "$name"
           sha256sum "dist/$name.tar.gz" > "dist/$name.tar.gz.sha256"
 

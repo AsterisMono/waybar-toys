@@ -4,3 +4,7 @@ members = [
     "wayherdr",
 ]
 resolver = "3"
+
+[profile.release]
+strip = true
+lto = true
