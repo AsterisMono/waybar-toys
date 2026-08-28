@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "waycat",
+    "waycodex",
     "wayherdr",
 ]
 resolver = "3"

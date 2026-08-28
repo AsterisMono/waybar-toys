@@ -5,6 +5,7 @@ A Rust workspace for Waybar tools.
 ## Workspace crates
 
 - [`waycat`](waycat) — an animated CPU usage widget
+- [`waycodex`](waycodex) — OpenAI Codex usage limits and banked resets
 - [`wayherdr`](wayherdr) — Herdr agent status for Waybar
 
 ## Development
