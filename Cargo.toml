@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "waycat",
+    "wayherdr",
+]
+resolver = "3"
